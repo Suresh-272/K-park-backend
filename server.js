@@ -72,6 +72,30 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// SMS / Twilio health check — visit this URL to verify Twilio is configured
+app.get('/api/health/sms', (req, res) => {
+  const { twilioReady, twilioFrom } = require('./utils/sms');
+  if (twilioReady) {
+    res.status(200).json({
+      success: true,
+      message: 'Twilio is configured and ready.',
+      from: twilioFrom,
+    });
+  } else {
+    const missing = [
+      !process.env.TWILIO_ACCOUNT_SID   && 'TWILIO_ACCOUNT_SID',
+      !process.env.TWILIO_AUTH_TOKEN    && 'TWILIO_AUTH_TOKEN',
+      !process.env.TWILIO_WHATSAPP_FROM && 'TWILIO_WHATSAPP_FROM',
+    ].filter(Boolean);
+    res.status(503).json({
+      success: false,
+      message: 'Twilio is NOT configured — WhatsApp notifications are disabled.',
+      missing,
+      fix: 'Add these environment variables in Render → your service → Environment tab, then redeploy.',
+    });
+  }
+});
+
 // Root route
 app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: 'K-Park API. Visit /api/health for status.' });
