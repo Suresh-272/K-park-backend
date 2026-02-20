@@ -82,3 +82,41 @@ exports.updatePassword = async (req, res, next) => {
     next(err);
   }
 };
+
+// PATCH /api/auth/update-profile
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { name, phone, vehicleNumber } = req.body;
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Name is required.' });
+    }
+    if (!vehicleNumber || !vehicleNumber.trim()) {
+      return res.status(400).json({ success: false, message: 'Vehicle number is required.' });
+    }
+
+    // Only allow safe fields to be updated (not email, password, role)
+    const updated = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        name: name.trim(),
+        phone: phone ? phone.trim() : req.user.phone,
+        vehicleNumber: vehicleNumber.trim().toUpperCase(),
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      data: { user: updated },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
